@@ -50,7 +50,7 @@ static void opt_init(int argc, char **argv)
     /*获取当前工作路径*/
     if(getcwd(opt.pwd_path, BUF_LEN_256B) == NULL)
     {
-        log_error("Failed to obtain the current working path! [ getcwd() error]");
+        LOG_ERROR("Failed to obtain the current working path! [ getcwd() error]");
         exit(-1);
     }
     if(argc > 1)
@@ -81,7 +81,7 @@ static void opt_init(int argc, char **argv)
         {
             if(ierr == 1)
             {
-                log_error("Failed: - n and - c can only specify one.");
+                LOG_ERROR("Failed: - n and - c can only specify one.");
                 exit(-1);
             }
             ierr = 1;
@@ -100,7 +100,7 @@ static void opt_init(int argc, char **argv)
         {
             if(ierr == 1)
             {
-                log_error("Failed: - n and - c can only specify one.");
+                LOG_ERROR("Failed: - n and - c can only specify one.");
                 exit(-1);
             }
             ierr = 1;
@@ -159,14 +159,14 @@ static void generate_project(const char *workpath)
     int iret = mkdir(propath.data(), 0777);
     if(iret == -1)
     {
-        log_error("The [ %s ] create fail!", propath.data());
+        LOG_ERROR("The [ %s ] create fail!", propath.data());
         return;
     }
     string srcpath = propath + "//src";
     iret = mkdir(srcpath.data(), 0777);
     if(iret == -1)
     {
-        log_error("The [ %s ] create fail!", srcpath.data());
+        LOG_ERROR("The [ %s ] create fail!", srcpath.data());
         return;
     }
     string cmakedata, cmakepath, compiledata, compilepath, codeHdata, codeCdata, codepath;
@@ -227,7 +227,7 @@ void run_opt()
     }
     else
     {
-        log_error("Unable to identify the type of project that needs to be generated. [ project_type_flag ] : %d", opt.project_type_flag);
+        LOG_ERROR("Unable to identify the type of project that needs to be generated. [ project_type_flag ] : %d", opt.project_type_flag);
     }
     
 }
@@ -246,6 +246,7 @@ void rum_more_funcation()
 
 int main(int argc, char **argv)
 {
+    log_attribute_set(NULL, 0, 0, 0);
     opt_init(argc, argv);
     
     if(opt.project_type_flag > 0)

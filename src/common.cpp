@@ -22,18 +22,18 @@ int write_file_data(const char *filename, const char *indata, int indatasize)
     /*C语言方式实现*/
     if(indata == NULL || filename == NULL)
     {
-        log_error("indata == NULL || filename == NULL");
+        LOG_ERROR("indata == NULL || filename == NULL");
         return -1;
     }
     int fd = open(filename,O_WRONLY | O_CREAT | O_EXCL, 0766);
     if(fd == -1)
     {
-        log_error("The [ %s ] file open failed and it may exist!", filename);
+        LOG_ERROR("The [ %s ] file open failed and it may exist!", filename);
         return -1;
     }
     if(write(fd,indata,indatasize) == -1)
     {
-        log_error("write() == -1");
+        LOG_ERROR("write() == -1");
         return -1;
     }
     close(fd);
@@ -46,7 +46,7 @@ int write_file_data(const char *filename, const char *indata, int indatasize)
 //     int iret = mkdir(__path,__mode);
 //     if(iret == -1)
 //     {
-//         log_error("The [ %s ] create fail!", __path);
+//         LOG_ERROR("The [ %s ] create fail!", __path);
 //         return -1;
 //     }
 //     return 0;

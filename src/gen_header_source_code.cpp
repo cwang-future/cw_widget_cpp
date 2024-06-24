@@ -99,7 +99,7 @@ int gen_C_Cpp_file(const char *workpath, const char *filename, string &inHdata, 
     const char *buff = workpath;
     if(buff == NULL)
     {
-        log_error("Failed to generate src source file!");
+        LOG_ERROR("Failed to generate src source file!");
         return -1;
     }
     string cfilename = buff;

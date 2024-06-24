@@ -1,168 +1,152 @@
-/*
- * Copyright (c) 2020 rxi
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to
- * deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
- */
 
 #include "log.h"
 
-#define MAX_CALLBACKS 32
+struct LogContex
+{
+	char filename[128];     /*文件名字*/
+	char filenameold[136];     /*备份文件名字*/
+	FILE *logfilefp;    /*写入文件的文件指针*/
+	int level;  /*日志层级*/
+	bool quiet; /*是否在控制台打印 true 否 false 是*/
+	unsigned int filetotalsize; /*日志文件的大小*/
+};
+static struct LogContex L = {"", "", NULL, 1, false, 32 * 1024};
 
-typedef struct {
-  log_LogFn fn;
-  void *udata;
-  int level;
-} Callback;
-
-static struct {
-  void *udata;
-  log_LockFn lock;
-  int level;
-  bool quiet;
-  Callback callbacks[MAX_CALLBACKS];
-} L;
-
-
-static const char *level_strings[] = {
-  "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
+static const char *level_strings[] = 
+{
+	"DEBUG", "INFO", "WARN", "ERROR"
 };
 
-#ifdef LOG_USE_COLOR
-static const char *level_colors[] = {
-  "\x1b[94m", "\x1b[36m", "\x1b[32m", "\x1b[33m", "\x1b[31m", "\x1b[35m"
-};
-#endif
+// static const char *level_colors[] = {
+//   "\x1b[36m", "\x1b[32m", "\x1b[33m", "\x1b[31m"
+// };
 
-
-static void stdout_callback(log_Event *ev) {
-  char buf[16];
-  buf[strftime(buf, sizeof(buf), "%H:%M:%S", ev->time)] = '\0';
-#ifdef LOG_USE_COLOR
-  fprintf(
-    ev->udata, "%s %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
-    buf, level_colors[ev->level], level_strings[ev->level],
-    ev->file, ev->line);
-#else
-  fprintf(
-    ev->udata, "%s %-5s %s:%d: ",
-    buf, level_strings[ev->level], ev->file, ev->line);
-#endif
-  vfprintf(ev->udata, ev->fmt, ev->ap);
-  fprintf(ev->udata, "\n");
-  fflush(ev->udata);
+static void print_log(log_Event *ev) 
+{
+	int i = 0;
+	const char *p = ev->file, *p1 = NULL;
+	/*截断需要打印的文件路径*/
+	while ((p1 = strstr(p, "/")) != NULL)
+	{
+		p1++;
+		if (p1 && (strstr(p1, "/") == NULL))
+		{
+			break;
+		}
+		p = p1;
+	}
+	if (p != NULL)
+	{
+		/*普通版*/
+		fprintf(ev->fp, "%s [%-5s] %s:%d : ", ev->buftime, level_strings[ev->level], p, ev->line);
+		/*线程号版*/
+		// fprintf(ev->fp, "%s [%lu][%-5s] %s:%d : ", ev->buftime,  (unsigned long int)pthread_self(), level_strings[ev->level], p, ev->line);
+		/*颜色版*/
+		/*fprintf(ev->fp, "%s \x1b[94m[%lu]%s[%-5s] \x1b[90m%s:%d:\x1b[0m ",
+				ev->buftime, (unsigned long int)pthread_self(), level_colors[ev->level], level_strings[ev->level], p, ev->line);*/
+		
+	}
+	else
+	{
+		fprintf(ev->fp, "%s [%-5s] %s:%d : ", ev->buftime, level_strings[ev->level], ev->file , ev->line);
+	}
+	/*格式化字符串并存储到动态分配的字符串中*/
+	vfprintf(ev->fp, ev->fmt, ev->ap);
+	fflush(ev->fp);
 }
 
 
-static void file_callback(log_Event *ev) {
-  char buf[64];
-  buf[strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ev->time)] = '\0';
-  fprintf(
-    ev->udata, "%s %-5s %s:%d: ",
-    buf, level_strings[ev->level], ev->file, ev->line);
-  vfprintf(ev->udata, ev->fmt, ev->ap);
-  fprintf(ev->udata, "\n");
-  fflush(ev->udata);
+/*备份日志文件*/
+static void log_file_backup()
+{
+	int ret = 0;
+	snprintf(L.filenameold, sizeof(L.filenameold), "%s%s", L.filename, ".old");
+	ret = access(L.filename, F_OK);
+	if (ret < 0) 
+	{
+		return;
+	}
+
+	unlink(L.filenameold);
+	rename(L.filename, L.filenameold);
+}
+
+/*日志属性设置
+filename : 文件名字，可为NULL 
+level : 设置日志层级 大于等于level的日志等级都打印 即小于level的日志等级不打印
+quiet : 为 true 不打印在控制台； 为 false 打印在控制台
+filetotalsize ：日志文件大小， 超过这个值将重置文件(备份现在日志文件为xx.log.old, 再次创建xx.log文件开始写日志)，当filename参数为NULL时，该值无用，可为0
+*/
+void log_attribute_set(const char *filename, int level, bool quiet, unsigned int filetotalsize)
+{
+	if (filename != NULL)
+	{
+		strncpy(L.filename, filename, sizeof(L.filename));
+		log_file_backup();
+		FILE* fp = fopen(filename, "a+");
+		if (fp)
+		{
+			L.logfilefp = fp;
+		}
+	}
+	if (level >= DEBUG && level <= ERROR)
+	{
+		L.level = level;
+	}
+	L.quiet = quiet;
+	if (filetotalsize >= 1024)
+	{
+		L.filetotalsize = filetotalsize;
+	}
+}
+/*获取时间*/
+static void gettime_(char* strtime, int strtime_size)
+{
+	struct tm tm;
+	struct timespec ts;
+	char buf[64] = { 0 };
+	if (strtime == NULL || strtime_size <= 0)
+	{
+		return;
+	}
+	memset(strtime, 0, strtime_size);
+	clock_gettime(CLOCK_REALTIME, &ts);
+	localtime_r(&ts.tv_sec, &tm);
+	snprintf(strtime, strtime_size, "%04d-%02d-%02d %02d:%02d:%02d.%03ld",
+		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec / 1000000);
+}
+
+void log_log(int level, const char *file, int line, const char *fmt, ...) 
+{
+	struct stat s;
+	log_Event ev =
+	{
+		.fmt = fmt,
+		.file = file,
+		.line = line,
+		.level = level,
+	};
+	gettime_(ev.buftime, sizeof(ev.buftime));
+	if (!L.quiet && level >= L.level) 
+	{
+		ev.fp = stderr;
+		va_start(ev.ap, fmt);   /* 初始化可变参数列表*/
+		print_log(&ev);
+		va_end(ev.ap);  /* 结束可变参数列表*/
+	}
+	if (!L.quiet && L.logfilefp && level >= L.level)
+	{
+		if (!stat(L.filename, &s) && s.st_size >= L.filetotalsize) 
+		{
+			fclose(L.logfilefp);
+			rename(L.filename, L.filenameold);
+			L.logfilefp = fopen(L.filename, "a+");
+		}
+		ev.fp = L.logfilefp;
+		va_start(ev.ap, fmt);   /* 初始化可变参数列表*/
+		print_log(&ev);
+		va_end(ev.ap);  /* 结束可变参数列表*/
+	}
 }
 
 
-static void lock(void)   {
-  if (L.lock) { L.lock(true, L.udata); }
-}
-
-
-static void unlock(void) {
-  if (L.lock) { L.lock(false, L.udata); }
-}
-
-
-const char* log_level_string(int level) {
-  return level_strings[level];
-}
-
-
-void log_set_lock(log_LockFn fn, void *udata) {
-  L.lock = fn;
-  L.udata = udata;
-}
-
-
-void log_set_level(int level) {
-  L.level = level;
-}
-
-
-void log_set_quiet(bool enable) {
-  L.quiet = enable;
-}
-
-
-int log_add_callback(log_LogFn fn, void *udata, int level) {
-  for (int i = 0; i < MAX_CALLBACKS; i++) {
-    if (!L.callbacks[i].fn) {
-      L.callbacks[i] = (Callback) { fn, udata, level };
-      return 0;
-    }
-  }
-  return -1;
-}
-
-
-int log_add_fp(FILE *fp, int level) {
-  return log_add_callback(file_callback, fp, level);
-}
-
-
-static void init_event(log_Event *ev, void *udata) {
-  if (!ev->time) {
-    time_t t = time(NULL);
-    ev->time = localtime(&t);
-  }
-  ev->udata = udata;
-}
-
-
-void log_log(int level, const char *file, int line, const char *fmt, ...) {
-  log_Event ev = {
-    .fmt   = fmt,
-    .file  = file,
-    .line  = line,
-    .level = level,
-  };
-
-  lock();
-
-  if (!L.quiet && level >= L.level) {
-    init_event(&ev, stderr);
-    va_start(ev.ap, fmt);
-    stdout_callback(&ev);
-    va_end(ev.ap);
-  }
-
-  for (int i = 0; i < MAX_CALLBACKS && L.callbacks[i].fn; i++) {
-    Callback *cb = &L.callbacks[i];
-    if (level >= cb->level) {
-      init_event(&ev, cb->udata);
-      va_start(ev.ap, fmt);
-      cb->fn(&ev);
-      va_end(ev.ap);
-    }
-  }
-
-  unlock();
-}
