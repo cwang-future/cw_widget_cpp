@@ -15,7 +15,7 @@ static void gen_H_(const char *filename, string &rethdata, const char *data)
         sHdata += data;
         sHdata += "\n\n";
     }
-    sHdata += "#endif /*" + tdfilename + "*/\n";
+    sHdata += "#endif\t/*" + tdfilename + "*/\n";
     rethdata.clear();
     rethdata += sHdata;
 }
@@ -56,11 +56,11 @@ static void gen_C_Cpp(const char *filename, string &retC_Cpp_data, const char *d
     strC += "int main(int argc, char **argv)\n{\n";
     if(iflag == 1)
     {
-        strC += "    printf(\"hello world\\n\");\n    return 0;\n}\n";
+        strC += "\tprintf(\"hello world\\n\");\n\treturn 0;\n}\n";
     }
     else
     {
-        strC += "    cout << \"hello world\\n\";\n    return 0;\n}\n";
+        strC += "\tcout << \"hello world\\n\";\n\treturn 0;\n}\n";
     }
     retC_Cpp_data.clear();
     retC_Cpp_data += strC;

@@ -15,19 +15,19 @@ path : 获取当前工作路径下 ".h .c .cpp"文件的绝对路径, 例如： 
 # 查看帮助
 cw-widget-cpp -h
 
-# 生成C语言文件 文件名字：ctest
+# 生成C语言文件 文件名字： ctest
 cw-widget-cpp -c ctest
 
-# 生成C++语言文件 文件名字：cpptest
+# 生成C++语言文件 文件名字： cpptest
 cw-widget-cpp -n cpptest
 
-# 生成C语言工程，工程名字：testproject 主文件名字：main
+# 生成C语言工程，工程名字： testproject 主文件名字： main
 cw-widget-cpp -p testproject
 
-# 生成C语言工程，工程名字：testproject 主文件名字：ctest
+# 生成C语言工程，工程名字： testproject 主文件名字： ctest
 cw-widget-cpp -p testproject -c ctest
 
-# 生成C++工程，工程名字：testproject 主文件名字：cpptest
+# 生成C++工程，工程名字： testproject 主文件名字： cpptest
 cw-widget-cpp -p testproject -n cpptest
 
 # 生成linux c pthread 的api测试文件
@@ -41,7 +41,9 @@ cw-widget-cpp path
 ./compile.sh
 
 # bug:
+1.所有输入的文件名字带了路径会出现bug
+
 
 # 需要新增功能
 1、生成linux c和通用C语言的读取文件和写入文件代码
-
+2、生成openwrt的单个包工程

@@ -93,7 +93,7 @@ static void opt_init(int argc, char **argv)
             opt.cpp_or_c = 1;
             string s1 = optarg;
             tihuan_(s1);
-            strncpy(opt.file_name,s1.data(),255);
+            strncpy(opt.file_name, s1.data(), 255);
             break;
         }
         case 'n':
@@ -111,13 +111,13 @@ static void opt_init(int argc, char **argv)
             opt.cpp_or_c = 2;
             string s1 = optarg;
             tihuan_(s1);
-            strncpy(opt.file_name,s1.data(),255);
+            strncpy(opt.file_name, s1.data(), 255);
             break;
         }
         case 'p':
         {
             opt.project_type_flag = 1;
-            strncpy(opt.project_name,optarg,255);
+            strncpy(opt.project_name, optarg, 255);
             break;
         }
         case 'h':
@@ -209,7 +209,7 @@ void run_opt()
         gen_thread_code(pth);
         gen_H_C_Cpp_code(opt.file_name, retdata, pth.data(), 2);
         gen_C_Cpp_file(opt.pwd_path, opt.file_name, tmp, pth, 1);
-        cout << "file save path : in " << opt.pwd_path << endl;
+        cout << "file save path : in " << opt.pwd_path << opt.file_name  << endl;
     }
     else if(opt.project_type_flag == 4)
     {
