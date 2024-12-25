@@ -7,6 +7,8 @@
 #include <stack>
 #include <vector>
 
+#define CW_WIDGET_CPP_VERSION "V1.0.0"
+
 #include <string.h>
 extern "C"
 {
