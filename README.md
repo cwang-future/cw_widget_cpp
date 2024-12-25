@@ -47,3 +47,4 @@ cw-widget-cpp path
 # 需要新增功能
 1、生成linux c和通用C语言的读取文件和写入文件代码
 2、生成openwrt的单个包工程
+test
