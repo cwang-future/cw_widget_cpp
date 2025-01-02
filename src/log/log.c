@@ -24,7 +24,6 @@ static const char *level_strings[] =
 
 static void print_log(log_Event *ev) 
 {
-	int i = 0;
 	const char *p = ev->file, *p1 = NULL;
 	while ((p != NULL) && ((p1 = strstr(p, "/")) != NULL))
 	{
@@ -105,7 +104,6 @@ static void gettime_(char* strtime, int strtime_size)
 {
 	struct tm tm;
 	struct timespec ts;
-	char buf[64] = { 0 };
 	if (strtime == NULL || strtime_size <= 0)
 	{
 		return;
@@ -113,8 +111,8 @@ static void gettime_(char* strtime, int strtime_size)
 	memset(strtime, 0, strtime_size);
 	clock_gettime(CLOCK_REALTIME, &ts);
 	localtime_r(&ts.tv_sec, &tm);
-	snprintf(strtime, strtime_size, "%04d-%02d-%02d %02d:%02d:%02d.%03ld",
-		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec / 1000000);
+	snprintf(strtime, strtime_size, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
+		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, (int)ts.tv_nsec / 1000000);
 }
 
 void log_log(int level, const char *file, int line, const char *fmt, ...) 
