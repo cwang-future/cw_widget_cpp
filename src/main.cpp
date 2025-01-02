@@ -30,7 +30,8 @@ static void opt_init(int argc, char **argv)
 		exit(-1);
 	}
 
-	printf("%s\n", opt.pwd_path);
+	// printf("%s\n", opt.pwd_path);
+	
 	if(argc > 1)
 	{
 		if(strcmp(argv[1], "pth") == 0)
